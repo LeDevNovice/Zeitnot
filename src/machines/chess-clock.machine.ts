@@ -22,6 +22,15 @@ function activeKey(ctx: ChessClockContext): 'playerA' | 'playerB' {
   return ctx.activePlayer === 'A' ? 'playerA' : 'playerB';
 }
 
+function isTimeExhausted(player: PlayerState, mode: string): boolean {
+  if (mode === 'byoyomi') {
+    return player.timeRemaining <= 0
+      && player.periodsRemaining <= 0
+      && player.periodTimeRemaining <= 0;
+  }
+  return player.timeRemaining <= 0;
+}
+
 const tickActor = fromCallback<ChessClockEvent>(({ sendBack }) => {
   const interval = setInterval(() => {
     sendBack({ type: 'TICK', now: performance.now() });
@@ -42,6 +51,9 @@ export const chessClockMachine = setup({
   guards: {
     isConfigValid: ({ context }) => {
       return context.config.initialTime > 0;
+    },
+    isTimeUp: ({ context }) => {
+      return isTimeExhausted(getActivePlayer(context), context.config.mode);
     },
   },
   actions: {
@@ -85,7 +97,22 @@ export const chessClockMachine = setup({
       player.timeRemaining = Math.max(0, player.timeRemaining - delta);
       if (player.timeRemaining <= 0) player.isFlagged = true;
       return { lastTickAt: event.now, [activeKey(context)]: player };
-    })
+    }),
+
+    setFlag: assign(({ context }) => {
+      const key = activeKey(context);
+      const player: PlayerState = { ...getActivePlayer(context) };
+
+      (player as any).isFlagged = true;
+      (player as any).timeRemaining = 0;
+
+      const winner: PlayerId = context.activePlayer === 'A' ? 'B' : 'A';
+
+      return {
+        [key]: player,
+        winner,
+      };
+    }),
   },
   actors: {
     tickActor,
@@ -120,6 +147,22 @@ export const chessClockMachine = setup({
         id: 'ticker',
         src: 'tickActor',
       },
+      on: {
+        TICK: [
+          {
+            guard: 'isTimeUp',
+            target: 'flagged',
+            actions: ['processTick', 'setFlag'],
+          },
+          {
+            actions: 'processTick',
+          },
+        ],
+      }
     },
+    flagged: {
+      tags: ['flagged'],
+      on: { RESET: { target: 'idle', actions: 'resetClock' } },
+    }
   }
 });
