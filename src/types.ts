@@ -58,3 +58,14 @@ export interface TimeControlConfig {
   readonly byoyomiPeriodTime: number;
   readonly byoyomiPeriods: number;
 }
+
+export interface UITimeControlInfo {
+  readonly label: string;
+  readonly description: string;
+  readonly icon: string;
+}
+
+export interface UIPreset {
+  readonly name: string;
+  readonly config: TimeControlConfig;
+}
