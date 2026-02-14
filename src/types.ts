@@ -44,6 +44,13 @@ export interface ChessClockInput {
   lowTimeThreshold?: number;
 }
 
+export type ChessClockTag =
+  | 'active'
+  | 'lowTime'
+  | 'flagged'
+  | 'paused'
+  | 'configuring';
+
 export type TimeControlMode =
   | 'sudden_death'
   | 'fischer'
