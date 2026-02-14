@@ -55,6 +55,10 @@ export const chessClockMachine = setup({
     isTimeUp: ({ context }) => {
       return isTimeExhausted(getActivePlayer(context), context.config.mode);
     },
+    canPressClock: ({ context }) => {
+      const active = getActivePlayer(context);
+      return !active.isFlagged && !isTimeExhausted(active, context.config.mode);
+    },
   },
   actions: {
     applyConfig: assign(({ event }) => {
@@ -114,6 +118,13 @@ export const chessClockMachine = setup({
       };
     }),
 
+    switchTurn: assign(({ context }) => {
+      const current = { ...getActivePlayer(context) };
+      current.movesPlayed += 1;
+      const nextPlayer = context.activePlayer === 'A' ? 'B' : 'A';
+      return { [activeKey(context)]: current, activePlayer: nextPlayer };
+    }),
+
     syncTimestamp: assign({ lastTickAt: () => performance.now() })
   },
   actors: {
@@ -160,6 +171,10 @@ export const chessClockMachine = setup({
             actions: 'processTick',
           },
         ],
+        PRESS_CLOCK: {
+          guard: 'canPressClock',
+          actions: ['switchTurn', 'startTurn'],
+        },
         RESET: { target: 'idle', actions: 'resetClock' },
       }
     },
