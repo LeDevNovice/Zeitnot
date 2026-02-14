@@ -113,7 +113,7 @@ export const chessClockMachine = setup({
         winner,
       };
     }),
-    
+
     syncTimestamp: assign({ lastTickAt: () => performance.now() })
   },
   actors: {
@@ -160,6 +160,7 @@ export const chessClockMachine = setup({
             actions: 'processTick',
           },
         ],
+        RESET: { target: 'idle', actions: 'resetClock' },
       }
     },
     flagged: {
