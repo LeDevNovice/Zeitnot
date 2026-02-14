@@ -1,5 +1,3 @@
-// timeRatio(), isInLowTime()
-
 export function formatTime(ms: number, showTenths = false): string {
   if (ms <= 0) return showTenths ? '0:00.0' : '0:00';
 
