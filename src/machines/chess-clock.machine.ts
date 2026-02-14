@@ -77,6 +77,15 @@ export const chessClockMachine = setup({
       isLowTime: false,
       lastTickAt: 0,
     })),
+
+    processTick: assign(({ context, event }) => {
+      if (event.type !== 'TICK') return {};
+      const delta = event.now - context.lastTickAt;
+      const player = { ...getActivePlayer(context) };
+      player.timeRemaining = Math.max(0, player.timeRemaining - delta);
+      if (player.timeRemaining <= 0) player.isFlagged = true;
+      return { lastTickAt: event.now, [activeKey(context)]: player };
+    })
   },
   actors: {
     tickActor,
