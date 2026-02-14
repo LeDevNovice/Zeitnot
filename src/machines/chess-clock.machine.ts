@@ -1,7 +1,7 @@
-import { assign, setup } from "xstate";
+import { assign, fromCallback, setup } from "xstate";
 
 import type { ChessClockContext, ChessClockEvent, ChessClockInput, ChessClockTag, PlayerId, PlayerState, TimeControlConfig } from "../types";
-import { DEFAULT_CONFIG } from "../utils/constants";
+import { DEFAULT_CONFIG, TICK_INTERVAL } from "../utils/constants";
 
 function createPlayerState(config: TimeControlConfig): PlayerState {
   return {
@@ -21,6 +21,16 @@ function getActivePlayer(ctx: ChessClockContext): PlayerState {
 function activeKey(ctx: ChessClockContext): 'playerA' | 'playerB' {
   return ctx.activePlayer === 'A' ? 'playerA' : 'playerB';
 }
+
+const tickActor = fromCallback<ChessClockEvent>(({ sendBack }) => {
+  const interval = setInterval(() => {
+    sendBack({ type: 'TICK', now: performance.now() });
+  }, TICK_INTERVAL);
+
+  return () => {
+    clearInterval(interval);
+  };
+});
 
 export const chessClockMachine = setup({
   types: {
@@ -68,7 +78,9 @@ export const chessClockMachine = setup({
       lastTickAt: 0,
     })),
   },
-  actors: {},
+  actors: {
+    tickActor,
+  },
 }).createMachine({
   id: 'zeitnot',
   context: ({ input }) => ({ /* TO-DO */ }),
@@ -93,6 +105,12 @@ export const chessClockMachine = setup({
         CONFIGURE: { target: 'configuring', actions: 'applyConfig' },
         RESET: { target: 'idle', actions: 'resetClock' },
       }
-    }
+    },
+    playing: {
+      invoke: {
+        id: 'ticker',
+        src: 'tickActor',
+      },
+    },
   }
 });
